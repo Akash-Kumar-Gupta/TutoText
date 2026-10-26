@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+application-local.properties
+**/target/
+**/node_modules/
+**/dist/
+**/.angular/
+.vscode/
+.idea/
+*.log
+.DS_Store
+Thumbs.db
