@@ -1,0 +1,38 @@
+<div class="app-shell">
+  <aside class="sidebar" aria-label="Main navigation">
+    <a class="brand" routerLink="/" aria-label="TutoText home">
+      <span class="brand-mark" aria-hidden="true">T</span>
+      <span>TutoText</span>
+    </a>
+
+    <p class="nav-label">Workspace</p>
+    <a class="side-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <span class="nav-icon" aria-hidden="true">⌂</span> Overview
+    </a>
+    <a class="side-link" routerLink="/transcriptions" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <span class="nav-icon" aria-hidden="true">▤</span> My transcripts
+    </a>
+    <a class="side-link" routerLink="/transcriptions/new" routerLinkActive="active">
+      <span class="nav-icon" aria-hidden="true">＋</span> New transcription
+    </a>
+    <a class="side-link" routerLink="/transcriptions/live" routerLinkActive="active">
+      <span class="nav-icon" aria-hidden="true">●</span> Live transcription
+    </a>
+
+    <div class="sidebar-spacer"></div>
+    <div class="sidebar-note">
+      <strong>Words worth keeping</strong>
+      Your transcripts stay organized and ready when you need them.
+    </div>
+  </aside>
+
+  <div class="main-area">
+    <header class="topbar">
+      <span class="topbar-caption">Your personal transcript library</span>
+      <span class="account-dot" aria-label="TutoText workspace">TT</span>
+    </header>
+    <main class="page-content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

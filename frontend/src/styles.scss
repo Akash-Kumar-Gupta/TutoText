@@ -1,0 +1,141 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
+
+:root {
+  color-scheme: light;
+  --ink: #1d2b26;
+  --muted: #718079;
+  --line: #e7ede9;
+  --surface: #fff;
+  --canvas: #f6f8f5;
+  --green: #315c3c;
+  --lime: #c7f476;
+  font-family: 'DM Sans', sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+  background: var(--canvas);
+  color: var(--ink);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+.font-display {
+  font-family: 'Manrope', 'DM Sans', sans-serif;
+  letter-spacing: -0.045em;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+.btn {
+  border-radius: 10px;
+  font-weight: 650;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+.btn-primary {
+  border-color: #315c3c;
+  background: #315c3c;
+
+  &:hover,
+  &:focus-visible {
+    border-color: #244a2f;
+    background: #244a2f;
+  }
+}
+
+.btn-lime {
+  border: 1px solid #b8e76d;
+  background: #c7f476;
+  color: #233b29;
+
+  &:hover,
+  &:focus-visible {
+    border-color: #a6da57;
+    background: #b9ec65;
+    color: #1c3322;
+  }
+}
+
+.form-control,
+.form-select {
+  min-height: 46px;
+  border-color: #dce5df;
+  border-radius: 9px;
+  color: var(--ink);
+
+  &:focus {
+    border-color: #80a88b;
+    box-shadow: 0 0 0 0.2rem rgba(49, 92, 60, 0.12);
+  }
+}
+
+textarea.form-control {
+  min-height: 180px;
+  line-height: 1.65;
+}
+
+.card-soft {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 5px 22px rgba(24, 47, 34, 0.035);
+}
+
+.eyebrow {
+  color: #66806f;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.page-title {
+  margin: 7px 0 8px;
+  color: #1c2e26;
+  font-size: clamp(1.8rem, 4vw, 2.35rem);
+  font-weight: 750;
+}
+
+.page-subtitle {
+  margin: 0;
+  color: var(--muted);
+}
+
+.text-muted-custom {
+  color: var(--muted);
+}
+
+.status-alert {
+  border: 1px solid #f1d2cf;
+  border-radius: 11px;
+  background: #fff7f6;
+  color: #8e342e;
+}
+
+.success-alert {
+  border: 1px solid #d2e9ca;
+  border-radius: 11px;
+  background: #f4fbf1;
+  color: #35613a;
+}
+
+.spinner-border {
+  color: #315c3c;
+}

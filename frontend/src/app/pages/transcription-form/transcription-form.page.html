@@ -1,0 +1,65 @@
+<a class="back-link" routerLink="/transcriptions">← Back to transcripts</a>
+<header class="form-header">
+  <span class="eyebrow">Add to your library</span>
+  <h1 class="page-title">New transcription</h1>
+  <p class="page-subtitle">Enter or paste text to save it as a transcript.</p>
+</header>
+
+<div class="manual-note mt-4" role="note">
+  <span class="note-icon" aria-hidden="true">✎</span>
+  <span><strong>Manual text entry</strong><br>This page saves text you enter. Want to speak instead? <a routerLink="/transcriptions/live">Open live transcription</a>.</span>
+</div>
+
+@if (error()) {
+  <div class="status-alert p-3 mt-3" role="alert">{{ error() }}</div>
+}
+
+<form class="form-panel card-soft mt-3" [formGroup]="form" (ngSubmit)="save()" novalidate>
+  <div class="row g-3">
+    <div class="col-12">
+      <label class="form-label" for="title">Title <span class="required-mark">*</span></label>
+      <input id="title" class="form-control" type="text" formControlName="title" maxlength="150" placeholder="e.g. Product ideas and next steps" autocomplete="off">
+      @if (form.controls.title.touched && form.controls.title.invalid) {
+        <div class="field-error">Enter a title with no more than 150 characters.</div>
+      }
+    </div>
+    <div class="col-12 col-md-7">
+      <label class="form-label" for="language">Language <span class="required-mark">*</span></label>
+      <input id="language" class="form-control" type="text" formControlName="language" maxlength="30" placeholder="e.g. Hindi, English, Hinglish">
+      @if (form.controls.language.touched && form.controls.language.invalid) {
+        <div class="field-error">Enter a language (up to 30 characters).</div>
+      }
+    </div>
+    <div class="col-12 col-md-5">
+      <label class="form-label" for="duration">Duration <span class="optional-label">optional</span></label>
+      <div class="input-group">
+        <input id="duration" class="form-control" type="number" formControlName="durationSeconds" min="0" max="2147483647" aria-describedby="duration-unit">
+        <span class="input-group-text" id="duration-unit">seconds</span>
+      </div>
+      @if (form.controls.durationSeconds.touched && form.controls.durationSeconds.invalid) {
+        <div class="field-error">Duration must be a whole number of 0 seconds or more.</div>
+      }
+    </div>
+    <div class="col-12">
+      <div class="label-row">
+        <label class="form-label mb-1" for="transcript-text">Transcript text <span class="required-mark">*</span></label>
+        <span class="char-count">{{ form.controls.transcriptText.value.length }} / 4,000,000</span>
+      </div>
+      <textarea id="transcript-text" class="form-control transcript-input" formControlName="transcriptText" maxlength="4000000" placeholder="Type or paste the words you want to keep…" rows="10"></textarea>
+      @if (form.controls.transcriptText.touched && form.controls.transcriptText.invalid) {
+        <div class="field-error">Transcript text is required (up to 4 million characters).</div>
+      }
+    </div>
+  </div>
+
+  <div class="form-footer">
+    <a class="btn btn-light border px-4" routerLink="/transcriptions">Cancel</a>
+    <button class="btn btn-primary px-4" type="submit" [disabled]="saving()">
+      @if (saving()) {
+        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Saving…
+      } @else {
+        Save transcript
+      }
+    </button>
+  </div>
+</form>

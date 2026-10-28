@@ -1,0 +1,129 @@
+<a class="back-link" routerLink="/transcriptions">← Back to transcripts</a>
+<header class="page-header">
+  <span class="eyebrow">Speak naturally</span>
+  <h1 class="page-title">Live transcription</h1>
+  <p class="page-subtitle">Transcribe speech in real time. Hindi and English are automatically detected; mixed-language results depend on the model.</p>
+</header>
+
+<section class="live-panel card-soft mt-4" aria-labelledby="recording-heading">
+  <div class="recording-top">
+    <div>
+      <h2 id="recording-heading">Recording session</h2>
+      <p>Allow microphone access when your browser asks.</p>
+    </div>
+    <div class="elapsed" aria-live="off">
+      <span class="elapsed-label">ELAPSED</span>
+      <strong>{{ formatElapsedTime(live.elapsedSeconds()) }}</strong>
+    </div>
+  </div>
+
+  <div class="status-line" aria-live="polite">
+    <span class="status-dot" [class.is-live]="live.status() === 'recording'"></span>
+    @switch (live.status()) {
+      @case ('requesting-microphone') { Requesting microphone permission… }
+      @case ('connecting') { Connecting securely to Gemini Live… }
+      @case ('recording') { Recording · speak in Hindi or English }
+      @case ('paused') { Recording paused }
+      @case ('stopping') { Finishing the current transcription… }
+      @case ('error') { Session needs attention }
+      @default { Ready to start }
+    }
+  </div>
+
+  <div class="recording-actions">
+    @if (live.status() === 'idle' || live.status() === 'error') {
+      <button class="btn btn-primary px-4" type="button" (click)="start()" [disabled]="saving()">
+        <span aria-hidden="true">●</span> Start recording
+      </button>
+    }
+    @if (live.status() === 'recording') {
+      <button class="btn btn-light border px-4" type="button" (click)="live.pause()">Pause</button>
+      <button class="btn btn-outline-danger px-4" type="button" (click)="stop()">Stop</button>
+    }
+    @if (live.status() === 'paused') {
+      <button class="btn btn-primary px-4" type="button" (click)="live.resume()">Resume</button>
+      <button class="btn btn-outline-danger px-4" type="button" (click)="stop()">Stop</button>
+    }
+    @if (live.status() === 'requesting-microphone' || live.status() === 'connecting' || live.status() === 'stopping') {
+      <button class="btn btn-light border px-4" type="button" disabled>
+        <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Please wait…
+      </button>
+    }
+  </div>
+
+  @if (live.error()) {
+    <div class="status-alert mt-3" role="alert">{{ live.error() }}</div>
+  }
+  @if (live.sessionLimitReached()) {
+    <div class="session-note mt-3" role="status">This session was stopped before Gemini's 10-minute session limit. Save the finalized transcript, then start a new session if needed.</div>
+  }
+  @if (saveSuccess()) {
+    <div class="session-note mt-3" role="status">Transcript saved to My transcripts.</div>
+  }
+</section>
+
+<section class="transcript-panel card-soft mt-3" aria-labelledby="transcript-heading">
+  <div class="transcript-heading">
+    <div>
+      <h2 id="transcript-heading">Transcript preview</h2>
+      <p>Interim words are a live preview. Only finalized words are saved.</p>
+    </div>
+    <span class="finalized-badge">{{ live.finalizedText().trim() ? 'Finalized text' : 'Waiting for speech' }}</span>
+  </div>
+  <div class="transcript-content" aria-live="polite" aria-atomic="false">
+    @if (live.finalizedText()) {
+      <p class="finalized-text">{{ live.finalizedText() }}</p>
+    }
+    @if (live.interimText()) {
+      <p class="interim-text">{{ live.interimText() }}</p>
+    }
+    @if (!live.finalizedText() && !live.interimText()) {
+      <p class="placeholder-text">Your speech will appear here as it is transcribed.</p>
+    }
+  </div>
+</section>
+
+@if (live.finalizedText().trim() && (live.status() === 'idle' || live.status() === 'error')) {
+  <section class="save-panel card-soft mt-3" aria-labelledby="save-heading">
+    @if (saveSuccess()) {
+      <h2 id="save-heading">Recording saved</h2>
+      <p>Your transcript is available in My transcripts.</p>
+      <button class="btn btn-primary px-4" type="button" (click)="newRecording()">+ New recording</button>
+    } @else {
+      <h2 id="save-heading">Save finalized transcript</h2>
+      <p>Interim preview text is excluded. You can edit the transcript later from your library.</p>
+      @if (saveError()) {
+        <div class="status-alert mb-3" role="alert">{{ saveError() }}</div>
+      }
+      <form [formGroup]="form" (ngSubmit)="save()" novalidate>
+        <div class="row g-3">
+          <div class="col-12 col-md-7">
+            <label class="form-label" for="live-title">Title</label>
+            <input class="form-control" id="live-title" formControlName="title" maxlength="150" autocomplete="off">
+            @if (form.controls.title.touched && form.controls.title.invalid) {
+              <div class="field-error">Enter a title with no more than 150 characters.</div>
+            }
+          </div>
+          <div class="col-12 col-md-5">
+            <label class="form-label" for="live-language">Language</label>
+            <input class="form-control" id="live-language" formControlName="language" maxlength="30" aria-describedby="language-hint">
+            <div class="field-hint" id="language-hint">Automatic detection; use a label such as Hindi, English, or Hinglish.</div>
+            @if (form.controls.language.touched && form.controls.language.invalid) {
+              <div class="field-error">Enter a language label with no more than 30 characters.</div>
+            }
+          </div>
+        </div>
+        <div class="save-actions mt-3">
+          <span class="duration-label">Recorded {{ formatElapsedTime(live.elapsedSeconds()) }}</span>
+          <button class="btn btn-primary px-4" type="submit" [disabled]="saving()">
+            @if (saving()) {
+              <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Saving…
+            } @else {
+              Save transcript
+            }
+          </button>
+        </div>
+      </form>
+    }
+  </section>
+}

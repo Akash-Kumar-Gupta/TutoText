@@ -1,0 +1,105 @@
+<section class="welcome-banner">
+  <div class="welcome-copy">
+    <span class="eyebrow">Your words, in one place</span>
+    <h1>Good ideas deserve<br class="d-none d-md-block"> to be remembered.</h1>
+    <p>Keep every conversation clear, searchable, and close at hand.</p>
+    <a class="btn btn-lime px-4 py-2 mt-3" routerLink="/transcriptions/new">
+      <span aria-hidden="true">＋</span> New transcription
+    </a>
+  </div>
+  <div class="hero-art" aria-hidden="true">
+    <div class="orb orb-one"></div>
+    <div class="orb orb-two"></div>
+    <div class="sound-wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="hero-card"><span>नमस्ते</span><span>Hello</span><small>words travel well</small></div>
+  </div>
+</section>
+
+<div class="section-heading mt-5 mb-3">
+  <div>
+    <span class="eyebrow">Your library</span>
+    <h2 class="section-title">A little progress adds up</h2>
+  </div>
+  <a class="text-link" routerLink="/transcriptions">View all transcripts <span aria-hidden="true">→</span></a>
+</div>
+
+@if (error()) {
+  <div class="status-alert p-3 mb-4" role="alert">{{ error() }}</div>
+}
+
+<div class="row g-3 mb-4">
+  <div class="col-12 col-sm-6">
+    <article class="stat-card card-soft">
+      <div class="stat-icon green-icon" aria-hidden="true">▤</div>
+      <div>
+        <div class="stat-label">Saved transcripts</div>
+        @if (loading()) {
+          <div class="placeholder-glow"><span class="placeholder col-3"></span></div>
+        } @else if (error()) {
+          <div class="stat-value" aria-label="Unavailable">—</div>
+        } @else {
+          <div class="stat-value">{{ transcripts().length }}</div>
+        }
+      </div>
+      <span class="stat-foot">in your library</span>
+    </article>
+  </div>
+  <div class="col-12 col-sm-6">
+    <article class="stat-card card-soft">
+      <div class="stat-icon lime-icon" aria-hidden="true">◷</div>
+      <div>
+        <div class="stat-label">Time captured</div>
+        @if (loading()) {
+          <div class="placeholder-glow"><span class="placeholder col-4"></span></div>
+        } @else if (error()) {
+          <div class="stat-value" aria-label="Unavailable">—</div>
+        } @else {
+          <div class="stat-value">{{ formatDuration(totalDuration()) }}</div>
+        }
+      </div>
+      <span class="stat-foot">across all sessions</span>
+    </article>
+  </div>
+</div>
+
+<section class="recent-card card-soft">
+  <div class="recent-heading">
+    <div>
+      <span class="eyebrow">Pick up where you left off</span>
+      <h2 class="section-title mb-0">Recent transcripts</h2>
+    </div>
+    <a class="btn btn-light border px-3" routerLink="/transcriptions">Browse library</a>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Loading your library…</div>
+  } @else if (error()) {
+    <div class="empty-state">
+      <div class="empty-icon" aria-hidden="true">!</div>
+      <h3>Your library could not load</h3>
+      <p>{{ error() }}</p>
+      <button class="btn btn-primary px-4" type="button" (click)="load()">Try again</button>
+    </div>
+  } @else if (transcripts().length === 0) {
+    <div class="empty-state">
+      <div class="empty-icon" aria-hidden="true">✦</div>
+      <h3>Your library starts with a thought</h3>
+      <p>Add a transcript manually now. Live speech capture will arrive in a later milestone.</p>
+      <a class="btn btn-primary px-4" routerLink="/transcriptions/new">Add your first transcript</a>
+    </div>
+  } @else {
+    <div class="recent-list">
+      @for (item of transcripts().slice(0, 5); track item.id) {
+        <a class="recent-row" [routerLink]="['/transcriptions', item.id]">
+          <span class="document-mark" aria-hidden="true">文</span>
+          <span class="recent-info">
+            <strong>{{ item.title }}</strong>
+            <small>{{ item.language }} <span aria-hidden="true">·</span> {{ item.createdAt | date: 'MMM d, y' }}</small>
+          </span>
+          <span class="recent-duration">{{ formatDuration(item.durationSeconds) }}</span>
+          <span class="row-arrow" aria-hidden="true">→</span>
+        </a>
+      }
+    </div>
+  }
+</section>

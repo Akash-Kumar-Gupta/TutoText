@@ -1,0 +1,110 @@
+.back-link {
+  display: inline-block;
+  margin-bottom: 24px;
+  color: #5e7567;
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    color: #315c3c;
+  }
+}
+
+.form-header {
+  max-width: 630px;
+}
+
+.manual-note {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 14px 16px;
+  border: 1px solid #dcebd2;
+  border-radius: 12px;
+  background: #f5faef;
+  color: #60755f;
+  font-size: 0.82rem;
+  line-height: 1.55;
+
+  strong {
+    color: #3e5d43;
+  }
+}
+
+.note-icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 11px;
+  background: #e7f2dc;
+  color: #416543;
+  font-size: 1.1rem;
+}
+
+.form-panel {
+  padding: clamp(18px, 4vw, 30px);
+}
+
+.form-label {
+  color: #34443b;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.required-mark {
+  color: #b54a3b;
+}
+
+.optional-label,
+.char-count {
+  color: #87948c;
+  font-size: 0.76rem;
+  font-weight: 400;
+}
+
+.label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.transcript-input {
+  min-height: 270px;
+  resize: vertical;
+}
+
+.input-group-text {
+  border-color: #dce5df;
+  border-radius: 0 9px 9px 0;
+  background: #f6f8f6;
+  color: #74827a;
+  font-size: 0.8rem;
+}
+
+.field-error {
+  margin-top: 5px;
+  color: #a33932;
+  font-size: 0.78rem;
+}
+
+.form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #edf1ee;
+}
+
+@media (max-width: 575.98px) {
+  .form-footer {
+    flex-direction: column-reverse;
+
+    .btn {
+      width: 100%;
+    }
+  }
+}

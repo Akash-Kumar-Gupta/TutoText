@@ -1,0 +1,135 @@
+.back-link {
+  display: inline-block;
+  margin-bottom: 24px;
+  color: #5e7567;
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-decoration: none;
+
+  &:hover {
+    color: #315c3c;
+  }
+}
+
+.detail-header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.detail-heading {
+  min-width: 0;
+}
+
+.metadata {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 9px 16px;
+  color: #7b8982;
+  font-size: 0.8rem;
+}
+
+.language-pill {
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: #edf5e9;
+  color: #4c7052;
+  font-weight: 650;
+}
+
+.transcript-paper {
+  overflow: hidden;
+}
+
+.paper-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 22px;
+  border-bottom: 1px solid #eaf0eb;
+  color: #829088;
+  font-size: 0.69rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.full-transcript {
+  min-height: 260px;
+  padding: clamp(22px, 5vw, 42px);
+  color: #34453b;
+  font-size: 1rem;
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.edit-panel {
+  padding: clamp(18px, 4vw, 30px);
+}
+
+.form-label {
+  color: #34443b;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.edit-textarea {
+  min-height: 300px;
+  resize: vertical;
+}
+
+.field-error {
+  margin-top: 5px;
+  color: #a33932;
+  font-size: 0.78rem;
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 21px;
+  padding-top: 18px;
+  border-top: 1px solid #edf1ee;
+}
+
+.loading-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 220px;
+  color: #718079;
+}
+
+.missing-panel {
+  padding: 35px;
+  text-align: center;
+
+  .empty-symbol {
+    display: grid;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    margin: 0 auto 15px;
+    border-radius: 14px;
+    background: #fff0ee;
+    color: #a54138;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .detail-header {
+    flex-direction: column;
+  }
+
+  .edit-actions {
+    flex-direction: column-reverse;
+
+    .btn {
+      width: 100%;
+    }
+  }
+}
