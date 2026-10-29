@@ -9,12 +9,16 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import jakarta.persistence.Index;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import java.time.Instant;
 
 @Entity
 @Table(name = "transcriptions", indexes = {
 		@Index(name = "idx_transcriptions_created_at", columnList = "created_at"),
-		@Index(name = "idx_transcriptions_language", columnList = "language")
+		@Index(name = "idx_transcriptions_language", columnList = "language"),
+		@Index(name = "idx_transcriptions_owner_created_at", columnList = "owner_id, created_at")
 })
 public class Transcription {
 
@@ -34,6 +38,10 @@ public class Transcription {
 	@Column(name = "duration_seconds", nullable = false)
 	private Integer durationSeconds;
 
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "owner_id", nullable = false)
+	private AppUser owner;
+
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private Instant createdAt;
 
@@ -43,11 +51,12 @@ public class Transcription {
 	protected Transcription() {
 	}
 
-	public Transcription(String title, String transcriptText, String language, Integer durationSeconds) {
+	public Transcription(String title, String transcriptText, String language, Integer durationSeconds, AppUser owner) {
 		this.title = title;
 		this.transcriptText = transcriptText;
 		this.language = language;
 		this.durationSeconds = durationSeconds;
+		this.owner = owner;
 	}
 
 	@PrePersist
@@ -92,6 +101,10 @@ public class Transcription {
 
 	public Integer getDurationSeconds() {
 		return durationSeconds;
+	}
+
+	public AppUser getOwner() {
+		return owner;
 	}
 
 	public void setDurationSeconds(Integer durationSeconds) {

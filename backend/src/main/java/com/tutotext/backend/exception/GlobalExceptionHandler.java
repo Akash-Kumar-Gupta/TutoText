@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.TreeMap;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
@@ -23,6 +24,47 @@ public class GlobalExceptionHandler {
 			TranscriptionNotFoundException exception,
 			HttpServletRequest request) {
 		return error(HttpStatus.NOT_FOUND, exception.getMessage(), request, Map.of());
+	}
+
+	@ExceptionHandler(RateLimitExceededException.class)
+	public ResponseEntity<ApiErrorResponse> handleRateLimitExceeded(
+			RateLimitExceededException exception,
+			HttpServletRequest request) {
+		ApiErrorResponse body = new ApiErrorResponse(
+				Instant.now(),
+				HttpStatus.TOO_MANY_REQUESTS.value(),
+				HttpStatus.TOO_MANY_REQUESTS.getReasonPhrase(),
+				"Too many requests. Please try again later.",
+				request.getRequestURI(),
+				Map.of());
+		return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+				.header(HttpHeaders.RETRY_AFTER, Long.toString(exception.getRetryAfterSeconds()))
+				.body(body);
+	}
+
+	@ExceptionHandler(EmailAlreadyRegisteredException.class)
+	public ResponseEntity<ApiErrorResponse> handleDuplicateEmail(
+			EmailAlreadyRegisteredException exception,
+			HttpServletRequest request) {
+		return error(HttpStatus.CONFLICT, "An account with this email already exists", request, Map.of());
+	}
+
+	@ExceptionHandler(InvalidCredentialsException.class)
+	public ResponseEntity<ApiErrorResponse> handleInvalidCredentials(
+			InvalidCredentialsException exception,
+			HttpServletRequest request) {
+		return error(HttpStatus.UNAUTHORIZED, "Invalid email or password", request, Map.of());
+	}
+
+	@ExceptionHandler(PasswordTooLongException.class)
+	public ResponseEntity<ApiErrorResponse> handlePasswordTooLong(
+			PasswordTooLongException exception,
+			HttpServletRequest request) {
+		return error(
+				HttpStatus.BAD_REQUEST,
+				"Password must be no more than 72 UTF-8 bytes",
+				request,
+				Map.of("password", "Password must be no more than 72 UTF-8 bytes"));
 	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)

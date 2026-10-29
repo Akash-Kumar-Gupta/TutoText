@@ -8,6 +8,7 @@ import jakarta.validation.constraints.Positive;
 import java.net.URI;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,8 +32,10 @@ public class TranscriptionController {
 	}
 
 	@PostMapping
-	public ResponseEntity<TranscriptionResponse> create(@Valid @RequestBody TranscriptionRequest request) {
-		TranscriptionResponse response = service.create(request);
+	public ResponseEntity<TranscriptionResponse> create(
+			@Valid @RequestBody TranscriptionRequest request,
+			Authentication authentication) {
+		TranscriptionResponse response = service.create(request, authentication.getName());
 		URI location = ServletUriComponentsBuilder.fromCurrentRequest()
 				.path("/{id}")
 				.buildAndExpand(response.id())
@@ -41,25 +44,26 @@ public class TranscriptionController {
 	}
 
 	@GetMapping
-	public List<TranscriptionResponse> findAll() {
-		return service.findAll();
+	public List<TranscriptionResponse> findAll(Authentication authentication) {
+		return service.findAll(authentication.getName());
 	}
 
 	@GetMapping("/{id}")
-	public TranscriptionResponse findById(@PathVariable @Positive Long id) {
-		return service.findById(id);
+	public TranscriptionResponse findById(@PathVariable @Positive Long id, Authentication authentication) {
+		return service.findById(id, authentication.getName());
 	}
 
 	@PutMapping("/{id}")
 	public TranscriptionResponse update(
 			@PathVariable @Positive Long id,
-			@Valid @RequestBody TranscriptionRequest request) {
-		return service.update(id, request);
+			@Valid @RequestBody TranscriptionRequest request,
+			Authentication authentication) {
+		return service.update(id, request, authentication.getName());
 	}
 
 	@DeleteMapping("/{id}")
-	public ResponseEntity<Void> delete(@PathVariable @Positive Long id) {
-		service.delete(id);
+	public ResponseEntity<Void> delete(@PathVariable @Positive Long id, Authentication authentication) {
+		service.delete(id, authentication.getName());
 		return ResponseEntity.noContent().build();
 	}
 }

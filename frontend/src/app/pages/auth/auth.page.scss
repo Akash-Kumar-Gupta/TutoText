@@ -1,0 +1,39 @@
+:host {
+  display: grid;
+  min-height: 60vh;
+  place-items: center;
+}
+
+.auth-card {
+  width: min(460px, 100%);
+  padding: clamp(24px, 5vw, 38px);
+}
+
+.form-label {
+  color: #34443b;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
+.field-hint,
+.auth-switch {
+  margin-top: 7px;
+  color: #77877e;
+  font-size: 0.8rem;
+}
+
+.field-error {
+  margin-top: 5px;
+  color: #a33932;
+  font-size: 0.78rem;
+}
+
+.auth-switch {
+  margin: 22px 0 0;
+  text-align: center;
+
+  a {
+    color: #315c3c;
+    font-weight: 650;
+  }
+}

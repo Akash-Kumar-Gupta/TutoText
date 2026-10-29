@@ -5,19 +5,21 @@
       <span>TutoText</span>
     </a>
 
-    <p class="nav-label">Workspace</p>
-    <a class="side-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-      <span class="nav-icon" aria-hidden="true">⌂</span> Overview
-    </a>
-    <a class="side-link" routerLink="/transcriptions" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-      <span class="nav-icon" aria-hidden="true">▤</span> My transcripts
-    </a>
-    <a class="side-link" routerLink="/transcriptions/new" routerLinkActive="active">
-      <span class="nav-icon" aria-hidden="true">＋</span> New transcription
-    </a>
-    <a class="side-link" routerLink="/transcriptions/live" routerLinkActive="active">
-      <span class="nav-icon" aria-hidden="true">●</span> Live transcription
-    </a>
+    @if (auth.isAuthenticated()) {
+      <p class="nav-label">Workspace</p>
+      <a class="side-link" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <span class="nav-icon" aria-hidden="true">⌂</span> Overview
+      </a>
+      <a class="side-link" routerLink="/transcriptions" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+        <span class="nav-icon" aria-hidden="true">▤</span> My transcripts
+      </a>
+      <a class="side-link" routerLink="/transcriptions/new" routerLinkActive="active">
+        <span class="nav-icon" aria-hidden="true">＋</span> New transcription
+      </a>
+      <a class="side-link" routerLink="/transcriptions/live" routerLinkActive="active">
+        <span class="nav-icon" aria-hidden="true">●</span> Live transcription
+      </a>
+    }
 
     <div class="sidebar-spacer"></div>
     <div class="sidebar-note">
@@ -28,8 +30,13 @@
 
   <div class="main-area">
     <header class="topbar">
-      <span class="topbar-caption">Your personal transcript library</span>
-      <span class="account-dot" aria-label="TutoText workspace">TT</span>
+      @if (auth.isAuthenticated()) {
+        <span class="topbar-caption">Signed in as {{ auth.email() }}</span>
+        <button class="btn btn-light border btn-sm" type="button" (click)="logout()">Sign out</button>
+      } @else {
+        <a class="btn btn-light border btn-sm" routerLink="/login">Sign in</a>
+        <a class="btn btn-primary btn-sm" routerLink="/register">Create account</a>
+      }
     </header>
     <main class="page-content">
       <router-outlet />
