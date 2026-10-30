@@ -1,4 +1,5 @@
-USE tutotext_db;
+-- Select the intended database explicitly in your MySQL client before running this migration.
+-- Example: USE defaultdb;
 
 CREATE TABLE IF NOT EXISTS app_users (
 	id BIGINT NOT NULL AUTO_INCREMENT,

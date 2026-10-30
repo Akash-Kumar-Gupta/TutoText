@@ -17,7 +17,7 @@ Live transcription requires a server-side Gemini API key. Hindi-English code-swi
 
 - **Frontend:** Angular 21 standalone components, TypeScript, Bootstrap 5, and SCSS.
 - **Backend:** Java 25, Spring Boot 4.0.9, Maven Wrapper, Spring MVC, Spring Security, JWT resource-server validation, BCrypt, validation, Spring Data JPA, and Hibernate.
-- **Database:** MySQL.
+- **Database:** MySQL 8.4-compatible; local MySQL or a cloud provider such as Aiven.
 - **Live speech:** Gemini Live API. The backend provisions a short-lived token; the permanent Gemini API key is not configured in Angular.
 
 The Angular application calls the Spring Boot REST API with an in-memory bearer token. Backend controllers delegate to services and Spring Data repositories. The `database/schema.sql` script defines the MySQL schema, and Hibernate validates it at startup rather than creating or updating tables.
@@ -26,7 +26,8 @@ The Angular application calls the Spring Boot REST API with an in-memory bearer 
 
 - Java 25.
 - Node.js and npm versions supported by Angular 21.
-- MySQL Server and a database user with permission to create/use `tutotext_db` and its tables.
+- Local development: MySQL Server and a database user with permission to create/use `tutotext_db` and its tables.
+- Production: a MySQL service, its hostname/port/database credentials, and its CA certificate for verified TLS.
 - MySQL Workbench is optional; the schema can also be run with a MySQL command-line client.
 - No globally installed Maven is needed; use the included Maven Wrapper.
 - A Google AI Studio API key is needed only for live Gemini transcription.
@@ -34,24 +35,24 @@ The Angular application calls the Spring Boot REST API with an in-memory bearer 
 
 ## 1. Create the database
 
-The checked-in [database/schema.sql](database/schema.sql) creates the `tutotext_db` database, `app_users` table, and `transcriptions` table with a required owner foreign key. It includes a `LONGTEXT` transcript column and timestamp fields.
+The checked-in [database/schema.sql](database/schema.sql) is for local or new-database bootstrap. It creates `tutotext_db`, `app_users`, and `transcriptions` with a required owner foreign key. It includes a `LONGTEXT` transcript column and timestamp fields. For an existing installation or cloud database, do not use this script as an upgrade mechanism; use the migrations below after reviewing the target schema.
 
 ### Using MySQL Workbench
 
 1. Connect to your MySQL server.
 2. Open `database/schema.sql` in Workbench.
 3. Execute the script with the lightning-bolt button.
-4. Refresh the Schemas panel and confirm `tutotext_db`, `app_users`, and `transcriptions` are present.
+4. Refresh the Schemas panel and confirm the local `tutotext_db`, `app_users`, and `transcriptions` are present.
 
 This script is for initial schema creation, not a migration mechanism for evolving an existing database. Back up important data before making database changes.
 
 ### Existing installations
 
-For a database created before account registration, first apply `database/migrations/001_create_app_users.sql` if `app_users` does not already exist. For existing transcript data, use this staged procedure; it preserves records and deliberately does not choose an owner:
+For a database created before account registration, first select the intended schema explicitly in your MySQL client, then apply `database/migrations/001_create_app_users.sql` if `app_users` does not already exist. The migration scripts intentionally contain no `USE` statement: for Aiven select `defaultdb`; for a local migration select `tutotext_db`. For existing transcript data, use this staged procedure; it preserves records and deliberately does not choose an owner:
 
 1. Back up the database and put the existing application into maintenance mode so no old backend instance can serve transcript requests during migration.
 2. Ensure `app_users` exists. If migrating from before account authentication, apply `database/migrations/001_create_app_users.sql`, temporarily start the Phase 1 backend in a restricted maintenance environment, and register the intended account. Stop every backend instance before continuing. For databases that already have accounts, select the intended account now.
-3. Apply `database/migrations/002_add_nullable_transcription_owner.sql`. Existing rows keep `owner_id = NULL`; the foreign key and lookup index are added. Keep the application unavailable while rows are unowned.
+3. Confirm the MySQL client is using the intended schema, then apply `database/migrations/002_add_nullable_transcription_owner.sql`. Existing rows keep `owner_id = NULL`; the foreign key and lookup index are added. Keep the application unavailable while rows are unowned.
 4. Review accounts and unowned transcript IDs before assigning anything:
 
    ```sql
@@ -75,9 +76,7 @@ For a database created before account registration, first apply `database/migrat
    SELECT COUNT(*) AS unowned_count FROM transcriptions WHERE owner_id IS NULL;
    ```
 
-   Continue only when the count is zero. Then apply `database/migrations/003_require_transcription_owner.sql`, which enforces `NOT NULL`. Start the backend after this migration; Hibernate validates the schema and rejects the nullable intermediate state.
-
-7. Apply `database/migrations/003_require_transcription_owner.sql`, then start only the updated backend and verify Hibernate schema validation succeeds before removing maintenance mode.
+   Apply `database/migrations/003_require_transcription_owner.sql` **exactly once**, and only when the unowned count is zero and every ownership assignment has been reviewed and approved. This migration enforces `NOT NULL` and is not safely rerunnable. Then start only the updated backend and verify Hibernate schema validation succeeds before removing maintenance mode.
 
 These steps do not delete transcripts or assign them arbitrarily. The updated backend cannot start against the nullable intermediate schema, and the old unscoped backend must remain stopped while records have no owner. Do not reopen access until every existing transcript has an intentional owner and the required constraint has been applied. Keep a backup before applying schema changes.
 
@@ -104,12 +103,15 @@ $content = $content -replace '(?m)^JWT_SECRET=.*$', "JWT_SECRET=$secret"
 Remove-Variable bytes, secret, content
 ```
 
-Then edit the remaining placeholders in `backend/.env`:
+For local development, edit the placeholders in `backend/.env`:
 
 ```properties
-DB_URL=jdbc:mysql://localhost:3306/tutotext_db
+DB_HOST=localhost
+DB_PORT=3306
+DB_NAME=tutotext_db
 DB_USERNAME=your_mysql_username
 DB_PASSWORD=your_local_mysql_password
+DB_SSL_MODE=DISABLED
 GEMINI_API_KEY=your_google_ai_studio_api_key
 JWT_SECRET=generated_by_the_command_above
 JWT_EXPIRATION_MS=900000
@@ -129,7 +131,36 @@ TRANSCRIPTION_REQUEST_MAX_BYTES=17825792
 OTHER_API_REQUEST_MAX_BYTES=65536
 ```
 
-Spring Boot imports the optional `.env` file when started from the `backend` directory. `DB_URL` defaults to `jdbc:mysql://localhost:3306/tutotext_db` if omitted. `DB_USERNAME` and `DB_PASSWORD` must match a MySQL account that can access the database. `GEMINI_API_KEY` is required for live session-token requests; transcript CRUD and account auth can be used without it. `JWT_SECRET` is required; the backend refuses missing, invalid Base64, or fewer-than-32-byte signing secrets. `JWT_EXPIRATION_MS` defaults to 900,000 milliseconds (15 minutes) and is limited to one minute through one day. `APP_CORS_ALLOWED_ORIGINS` is an optional comma-separated exact-origin allowlist for a separately hosted frontend; leave empty for same-origin deployments.
+Spring Boot imports the optional `.env` file when started from the `backend` directory. `DB_HOST`, `DB_PORT`, and `DB_NAME` default locally to `localhost`, `3306`, and `tutotext_db`. `DB_URL`, if set, remains a compatibility override for the composed JDBC URL. `DB_USERNAME` and `DB_PASSWORD` must match a MySQL account with access to the selected schema. Local SSL defaults to `DISABLED`; Hibernate uses `spring.jpa.hibernate.ddl-auto=validate` and does not create or alter schema objects.
+
+### Production configuration: Aiven MySQL
+
+Set `SPRING_PROFILES_ACTIVE=production` in the cloud runtime and configure these values using the platform's configuration and secret mechanisms:
+
+```text
+DB_HOST=<Aiven service hostname>
+DB_PORT=22820
+DB_NAME=defaultdb
+DB_USERNAME=<Aiven database username>
+DB_PASSWORD=<Aiven database password>
+DB_SSL_MODE=VERIFY_IDENTITY
+DB_TRUSTSTORE_URL=file:/run/secrets/aiven-mysql-truststore.jks
+DB_TRUSTSTORE_TYPE=JKS
+```
+
+Provide `DB_TRUSTSTORE_PASSWORD` separately through the deployment platform's secret manager; do not put its value in a committed file, Dockerfile, image layer, command-line argument, or JVM startup option. Spring passes it directly to Connector/J and the production profile keeps Hikari configuration debug logging disabled to avoid printing connection properties. Do not enable DEBUG/TRACE logging for JDBC or datasource configuration in production. The production Spring profile has no local database or SSL-mode fallback and fails startup unless the effective datasource SSL mode is exactly `VERIFY_IDENTITY`. The JDBC URL uses `DB_HOST`, `DB_PORT`, and `DB_NAME`; use the exact service hostname and port shown by Aiven. `DB_URL` may override the composed URL, but it does not bypass the production TLS-mode check.
+
+Aiven requires TLS. Download the CA certificate from the Aiven service's connection information and create a Java truststore outside the repository. For example, with a JDK `keytool` and the downloaded CA file:
+
+```powershell
+keytool -importcert -alias aiven-mysql-ca -file .\ca.pem -keystore C:\secure\aiven-mysql-truststore.jks -storetype JKS
+```
+
+`keytool` prompts for a truststore password. Set `DB_TRUSTSTORE_URL` to the truststore file URL, `DB_TRUSTSTORE_TYPE` to its type, and inject `DB_TRUSTSTORE_PASSWORD` through the platform's secret manager. Spring binds these to Connector/J's `trustCertificateKeyStoreUrl`, `trustCertificateKeyStoreType`, and `trustCertificateKeyStorePassword` connection properties. No truststore password belongs in `JAVA_TOOL_OPTIONS`; JVM startup options only need a truststore path/type if you separately configure Java's global truststore.
+
+For Docker, the truststore contains only the public Aiven CA certificate and can be copied into a controlled image build or mounted read-only. Prefer a read-only mount if you need CA rotation without rebuilding. Do not copy truststore passwords, private keys, or credentials into the build context, Dockerfile, image layers, or logs. Inject the password as a platform-managed secret at runtime. MySQL Connector/J's `sslMode=VERIFY_IDENTITY` verifies both the certificate chain and hostname; production startup rejects weaker modes. The application does not automatically download or trust an arbitrary server certificate. The JDBC driver is the MySQL Connector/J version managed by Spring Boot.
+
+The frontend's `/api` base URL and localhost development proxy are unchanged; configure the production frontend/reverse proxy separately to route `/api` to the backend over HTTPS.
 
 Keep actual credentials only in the ignored local `.env` file or in your deployment platform's secret/environment-variable manager. Do not paste credentials into source files, Angular configuration, logs, screenshots, or Git.
 
