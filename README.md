@@ -148,7 +148,7 @@ DB_TRUSTSTORE_URL=file:/run/secrets/aiven-mysql-truststore.jks
 DB_TRUSTSTORE_TYPE=JKS
 ```
 
-Provide `DB_TRUSTSTORE_PASSWORD` separately through the deployment platform's secret manager; do not put its value in a committed file, Dockerfile, image layer, command-line argument, or JVM startup option. Spring passes it directly to Connector/J and the production profile keeps Hikari configuration debug logging disabled to avoid printing connection properties. Do not enable DEBUG/TRACE logging for JDBC or datasource configuration in production. The production Spring profile has no local database or SSL-mode fallback and fails startup unless the effective datasource SSL mode is exactly `VERIFY_IDENTITY`. The JDBC URL uses `DB_HOST`, `DB_PORT`, and `DB_NAME`; use the exact service hostname and port shown by Aiven. `DB_URL` may override the composed URL, but it does not bypass the production TLS-mode check.
+These truststore URL/type settings are for a truststore prepared outside the container. For the Docker/Render setup below, the entrypoint creates the truststore and sets its URL/type; do not override those values. Provide `DB_TRUSTSTORE_PASSWORD` separately through the deployment platform's secret manager; do not put its value in a committed file, Dockerfile, image layer, command-line argument, or JVM startup option. Spring passes it directly to Connector/J and the production profile keeps Hikari configuration debug logging disabled to avoid printing connection properties. Do not enable DEBUG/TRACE logging for JDBC or datasource configuration in production. The production Spring profile has no local database or SSL-mode fallback and fails startup unless the effective datasource SSL mode is exactly `VERIFY_IDENTITY`. The JDBC URL uses `DB_HOST`, `DB_PORT`, and `DB_NAME`; use the exact service hostname and port shown by Aiven. `DB_URL` may override the composed URL, but it does not bypass the production TLS-mode check.
 
 Aiven requires TLS. Download the CA certificate from the Aiven service's connection information and create a Java truststore outside the repository. For example, with a JDK `keytool` and the downloaded CA file:
 
@@ -158,7 +158,7 @@ keytool -importcert -alias aiven-mysql-ca -file .\ca.pem -keystore C:\secure\aiv
 
 `keytool` prompts for a truststore password. Set `DB_TRUSTSTORE_URL` to the truststore file URL, `DB_TRUSTSTORE_TYPE` to its type, and inject `DB_TRUSTSTORE_PASSWORD` through the platform's secret manager. Spring binds these to Connector/J's `trustCertificateKeyStoreUrl`, `trustCertificateKeyStoreType`, and `trustCertificateKeyStorePassword` connection properties. No truststore password belongs in `JAVA_TOOL_OPTIONS`; JVM startup options only need a truststore path/type if you separately configure Java's global truststore.
 
-For Docker, the truststore contains only the public Aiven CA certificate and can be copied into a controlled image build or mounted read-only. Prefer a read-only mount if you need CA rotation without rebuilding. Do not copy truststore passwords, private keys, or credentials into the build context, Dockerfile, image layers, or logs. Inject the password as a platform-managed secret at runtime. MySQL Connector/J's `sslMode=VERIFY_IDENTITY` verifies both the certificate chain and hostname; production startup rejects weaker modes. The application does not automatically download or trust an arbitrary server certificate. The JDBC driver is the MySQL Connector/J version managed by Spring Boot.
+For the Docker deployment below, provide the public Aiven CA PEM as a runtime secret file; the container generates a temporary truststore at startup. Do not copy truststore passwords, private keys, or credentials into the build context, Dockerfile, image layers, or logs. Inject the password as a platform-managed secret at runtime. MySQL Connector/J's `sslMode=VERIFY_IDENTITY` verifies both the certificate chain and hostname; production startup rejects weaker modes. The application does not automatically download or trust an arbitrary server certificate. The JDBC driver is the MySQL Connector/J version managed by Spring Boot.
 
 The frontend's `/api` base URL and localhost development proxy are unchanged; configure the production frontend/reverse proxy separately to route `/api` to the backend over HTTPS.
 
@@ -222,6 +222,41 @@ Request bodies are capped before JSON parsing: authentication requests at 16 KiB
 The dashboard currently derives its metrics from `GET /api/transcriptions`; there is no separate dashboard-stats endpoint.
 
 The live-session endpoint returns an ephemeral token to the browser for the Live API WebSocket. Do not log, persist, or share that token. The permanent `GEMINI_API_KEY` must remain server-side.
+
+## Docker and Render deployment
+
+The backend Docker build uses the Maven Wrapper and runs the complete Maven `package` lifecycle, including tests. Build it from the backend directory:
+
+```powershell
+Set-Location .\backend
+docker build -t tutotext-backend .
+```
+
+For local Docker use, start MySQL on the host and run:
+
+```powershell
+docker run --rm --name tutotext-backend -p 8080:8080 --env-file .env -e DB_HOST=host.docker.internal tutotext-backend
+```
+
+The local profile uses port 8080 by default and `DB_SSL_MODE=DISABLED`; `PORT` overrides the application port when supplied. Before Java starts, the Docker entrypoint maps `DB_URL` (if set) or the composed `DB_HOST`/`DB_PORT`/`DB_NAME` value to Spring Boot's native `SPRING_DATASOURCE_URL`. It also maps `DB_USERNAME`, `DB_PASSWORD`, and `JWT_SECRET` to their corresponding Spring-native property names without logging their values. Local database defaults are `localhost:3306/tutotext_db`. The same mapping is performed for non-Docker Spring starts; production requires all three database coordinates and rejects local hosts. The `.dockerignore` excludes environment files, Git history, Maven output, frontend output, and local tooling; `.env` is supplied at runtime only and is not copied into the image.
+
+The runtime stage uses the version-tagged Java 25 JRE image and runs as a non-root user. The Dockerfile checks that `keytool` is present in that JRE. It copies only the executable application JAR from the build stage. JVM memory percentages respect container memory limits. Image tags are pinned to Java 25.0.1+8 and Ubuntu Noble, but no immutable registry digest has been recorded; tags can be retargeted, so review and pin image digests before a higher-assurance release.
+
+`render.yaml` prepares an optional Render Docker web service with `backend` as its root/build context and `/actuator/health/readiness` as the health check. Connect the repository to Render and review the Blueprint before creating the service. Configure these values in Render; do not commit real values:
+
+- `DB_HOST`, `DB_USERNAME`, `DB_PASSWORD`: Aiven service hostname and database credentials.
+- `DB_PORT=22820`, `DB_NAME=defaultdb`, `DB_SSL_MODE=VERIFY_IDENTITY`.
+- `JWT_SECRET`, `GEMINI_API_KEY`, and `APP_CORS_ALLOWED_ORIGINS` set to the exact deployed frontend origin(s).
+- `DB_TRUSTSTORE_PASSWORD`: a strong password injected as a Render secret environment variable.
+- Add the public Aiven CA PEM as a Render Secret File named `aiven-ca.pem`, mounted at `/etc/secrets/aiven-ca.pem`. The Blueprint sets `AIVEN_CA_CERT_FILE` to that path.
+
+At startup in the production profile, the container requires `DB_SSL_MODE=VERIFY_IDENTITY`, reads the CA PEM secret file, and uses `keytool` to create a temporary PKCS12 truststore under `/tmp`. It passes only the name of the password environment variable to `keytool`, never the password value as a command argument, and sets restrictive file permissions. The generated truststore path and type are passed to Connector/J; hostname verification remains enabled. The truststore is recreated on container restart. Do not set DEBUG/TRACE datasource logging or put the truststore password in a Dockerfile, build argument, image, JVM option, or repository file.
+
+The public readiness route returns status without component details. It checks application readiness and database health. Only Actuator health is exposed; unauthenticated access is limited to `GET /actuator/health/readiness`. The base health endpoint and all application APIs continue to require authentication. Actuator environment, configuration, bean, mapping, and other sensitive endpoints are not exposed.
+
+Before deploying, manually complete and verify the database migration sequence in the section above, including reviewed ownership assignments and migration 003. **The container does not execute SQL or migrations automatically.** Hibernate validates the schema at startup. Configure Aiven's network allowlist for the Render service's actual outbound IP ranges. Do not assume Render free-tier outbound addresses are static; check the current Render plan, region, and documented egress ranges, and avoid opening the database to all source addresses.
+
+The in-memory rate limiter remains per process and resets on restart. A scaled multi-instance Render deployment does not share rate-limit state; use a shared limiter or gateway protection before relying on limits across instances.
 
 ## Tests and production build
 
