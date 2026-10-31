@@ -34,6 +34,7 @@ public class SecurityConfiguration {
 						.authenticationEntryPoint(errorHandlers)
 						.accessDeniedHandler(errorHandlers))
 				.authorizeHttpRequests(authorize -> authorize
+						.requestMatchers(HttpMethod.GET, "/actuator/health/readiness").permitAll()
 						.requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login").permitAll()
 						.anyRequest().authenticated())
 				.oauth2ResourceServer(resourceServer -> resourceServer
